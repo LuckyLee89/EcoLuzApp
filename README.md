@@ -1,57 +1,72 @@
-# EcoLuzApp ⚡
+# EcoLuzApp
 
-Aplicativo mobile para monitoramento de consumo de energia residencial, com integração a dispositivos inteligentes e visualização gráfica.
+Aplicativo de monitoramento de consumo energético residencial utilizando Supabase e React Native com Expo.
 
-## 🚀 Tecnologias
+## 🚀 Tecnologias utilizadas
 
-- React Native (Expo)
-- Supabase (autenticação e banco de dados)
-- react-native-chart-kit (gráficos)
-- TypeScript
+- [Expo](https://expo.dev/)
+- [React Native](https://reactnative.dev/)
+- [Supabase](https://supabase.com/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [react-native-chart-kit](https://github.com/indiespirit/react-native-chart-kit)
 
-## 📦 Instalação
+## ⚙️ Requisitos
 
-Clone o projeto e instale as dependências:
+- Node.js >= 18.x
+- Expo CLI (`npm install -g expo-cli`)
+- Conta no [Supabase](https://supabase.com/)
+
+## 🔧 Instalação
 
 ```bash
-git clone https://github.com/seu-usuario/EcoLuzApp.git
-cd EcoLuzApp
+git clone https://github.com/seu-usuario/ecoluzapp.git
+cd ecoluzapp
 npm install
 ```
 
-> Certifique-se de ter o `Node.js`, `npm` e `Expo CLI` instalados.
+## 📦 Configuração
 
-```bash
-npm install -g expo-cli
-```
-
-## ▶️ Executar o app
-
-```bash
-npx expo start
-```
-
-Abra o app Expo Go no seu celular e escaneie o QR code, ou use um emulador Android/iOS.
-
-## ⚙️ Configuração
-
-Crie um arquivo `.env` na raiz com as credenciais do Supabase:
+Crie um arquivo `.env` na raiz com o seguinte conteúdo:
 
 ```
 SUPABASE_URL=https://<sua-instancia>.supabase.co
-SUPABASE_KEY=public-anon-key
+SUPABASE_ANON_KEY=eyJhbGciOi...
+```
+
+Certifique-se de que seu arquivo `app.config.js` esteja expondo as variáveis do `.env` corretamente:
+
+```js
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: 'EcoLuzApp',
+    slug: 'ecoluzapp',
+    extra: {
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    },
+  },
+};
+```
+
+## ▶️ Executando
+
+```bash
+npx expo start --clear
+```
+
+## 📁 Estrutura de diretórios
+
+```
+src/
+├── components/
+├── hooks/
+├── services/
+│   └── supabaseClient.ts
+└── styles/
 ```
 
 ---
 
-## 📸 Telas futuras
-
-- Gráfico de consumo por período
-- Alertas de alto consumo
-- Integração com dispositivos IoT Tuya
-
----
-
-## 🧑‍💻 Autor
-
-Desenvolvido por [Seu Nome]
+Feito com 💡 por [Seu Nome]
