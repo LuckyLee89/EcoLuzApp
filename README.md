@@ -1,50 +1,57 @@
-# Welcome to your Expo app 👋
+# EcoLuzApp ⚡
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo mobile para monitoramento de consumo de energia residencial, com integração a dispositivos inteligentes e visualização gráfica.
 
-## Get started
+## 🚀 Tecnologias
 
-1. Install dependencies
+- React Native (Expo)
+- Supabase (autenticação e banco de dados)
+- react-native-chart-kit (gráficos)
+- TypeScript
 
-   ```bash
-   npm install
-   ```
+## 📦 Instalação
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Clone o projeto e instale as dependências:
 
 ```bash
-npm run reset-project
+git clone https://github.com/seu-usuario/EcoLuzApp.git
+cd EcoLuzApp
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+> Certifique-se de ter o `Node.js`, `npm` e `Expo CLI` instalados.
 
-## Learn more
+```bash
+npm install -g expo-cli
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## ▶️ Executar o app
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx expo start
+```
 
-## Join the community
+Abra o app Expo Go no seu celular e escaneie o QR code, ou use um emulador Android/iOS.
 
-Join our community of developers creating universal apps.
+## ⚙️ Configuração
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Crie um arquivo `.env` na raiz com as credenciais do Supabase:
+
+```
+SUPABASE_URL=https://<sua-instancia>.supabase.co
+SUPABASE_KEY=public-anon-key
+```
+
+---
+
+## 📸 Telas futuras
+
+- Gráfico de consumo por período
+- Alertas de alto consumo
+- Integração com dispositivos IoT Tuya
+
+---
+
+## 🧑‍💻 Autor
+
+Desenvolvido por [Seu Nome]
