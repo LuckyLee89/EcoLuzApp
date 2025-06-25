@@ -1,5 +1,6 @@
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { Provider as PaperProvider } from 'react-native-paper';
 import { supabase } from '../src/services/supabaseClient';
 
 export default function RootLayout() {
@@ -9,7 +10,6 @@ export default function RootLayout() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && pathname !== '/login') {
-        // Aguarda o próximo frame antes de redirecionar
         setTimeout(() => {
           router.replace('/login');
         }, 0);
@@ -17,5 +17,9 @@ export default function RootLayout() {
     });
   }, [router, pathname]);
 
-  return <Slot />;
+  return (
+    <PaperProvider>
+      <Slot />
+    </PaperProvider>
+  );
 }
