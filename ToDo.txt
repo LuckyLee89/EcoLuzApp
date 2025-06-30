@@ -1,0 +1,1 @@
+- Ao inserir um registro tem que atualizar o dashboard, no momento só atualiza ao logar
