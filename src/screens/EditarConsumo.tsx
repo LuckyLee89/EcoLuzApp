@@ -9,10 +9,11 @@ import { Button, Text, TextInput } from 'react-native-paper';
 export default function EditarConsumoScreen() {
   const params = useLocalSearchParams();
 
-  const id = params.id as string | undefined;
+  const paramId = params.id as string | undefined;
   const dataParam = params.data as string | undefined;
   const consumoParam = params.consumo as string | undefined;
 
+  const [idRegistro, setIdRegistro] = useState<string | null>(paramId ?? null);
   const [data, setData] = useState(
     dataParam ? new Date(dataParam) : new Date(),
   );
@@ -26,6 +27,43 @@ export default function EditarConsumoScreen() {
     if (dataParam) setData(new Date(dataParam));
     if (consumoParam) setConsumo(consumoParam);
   }, [dataParam, consumoParam]);
+  useEffect(() => {
+    if (!paramId && !dataParam) {
+      Alert.alert(
+        'Acesso inválido',
+        'A tela de edição deve ser acessada através do histórico.',
+      );
+      router.replace('/(tabs)/historico');
+    }
+  }, [dataParam, paramId]);
+
+  useEffect(() => {
+    const buscarIdPorData = async () => {
+      if (paramId || !dataParam) return;
+
+      const { data: session } = await supabase.auth.getUser();
+      const user = session?.user;
+      if (!user) {
+        Alert.alert('Erro', 'Usuário não autenticado.');
+        return;
+      }
+
+      const { data: resultado } = await supabase
+        .from('consumo')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('data', dataParam)
+        .single();
+
+      if (resultado?.id) {
+        setIdRegistro(resultado.id);
+      } else {
+        Alert.alert('Erro', 'Registro não encontrado para a data informada.');
+      }
+    };
+
+    buscarIdPorData();
+  }, [dataParam, paramId]);
 
   const aoSelecionarData = (_: any, selectedDate?: Date) => {
     setMostrarPicker(Platform.OS === 'ios');
@@ -33,7 +71,7 @@ export default function EditarConsumoScreen() {
   };
 
   const handleEditar = async () => {
-    if (!id) {
+    if (!idRegistro) {
       Alert.alert('Erro', 'ID do registro não encontrado.');
       return;
     }
@@ -73,8 +111,8 @@ export default function EditarConsumoScreen() {
           data: novaData,
           consumo_kwh: novoConsumo,
         })
-        .eq('id', id.toString())
-        .eq('user_id', userData.user.id.toString())
+        .eq('id', idRegistro)
+        .eq('user_id', userData.user.id)
         .select();
 
       console.log('Resultado do update:', updateResult);
