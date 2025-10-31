@@ -1,36 +1,39 @@
 import { StyleSheet } from 'react-native';
+import { MD3Theme } from 'react-native-paper';
 
-export const assinaturaStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-  },
-  titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#1b5e20',
-    textAlign: 'center',
-  },
-  descricao: {
-    fontSize: 16,
-    color: '#444',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  beneficio: {
-    fontSize: 15,
-    marginBottom: 8,
-    color: '#333',
-  },
-  botaoAssinar: {
-    marginTop: 24,
-    marginBottom: 12,
-    backgroundColor: '#1b5e20',
-  },
-  botaoVoltar: {
-    alignSelf: 'center',
-  },
-});
+export const criarAssinaturaStyles = (theme: MD3Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 24,
+      backgroundColor: theme.colors.background,
+      justifyContent: 'center',
+    },
+    titulo: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 12,
+      color: theme.colors.primary,
+      textAlign: 'center',
+    },
+    descricao: {
+      fontSize: 16,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      marginBottom: 24,
+    },
+    beneficio: {
+      fontSize: 15,
+      marginBottom: 8,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+    },
+    botaoAssinar: {
+      marginTop: 24,
+      marginBottom: 12,
+      backgroundColor: theme.colors.primary,
+    },
+    botaoVoltar: {
+      alignSelf: 'center',
+    },
+  });

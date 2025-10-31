@@ -1,14 +1,17 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@services/supabaseClient';
-import { dashboardStyles as styles } from '@styles/dashboardStyles';
+import { criarDashboardStyles } from '@styles/dashboardStyles';
 import { useCallback, useState } from 'react';
 import { Dimensions, ScrollView, Text, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Card } from 'react-native-paper';
+import { Card, useTheme } from 'react-native-paper';
 
 type Consumo = { id: string; data: string; consumo_kwh: number };
 
-export default function Dashboard() {
+export default function DashboardScreen() {
+  const theme = useTheme();
+  const styles = criarDashboardStyles(theme);
+
   const [dados, setDados] = useState<Consumo[]>([]);
   const [total, setTotal] = useState(0);
   useFocusEffect(
@@ -64,7 +67,10 @@ export default function Dashboard() {
   );
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 80 }}
+    >
       <Text style={styles.titulo}>Bem-vindo de volta ⚡</Text>
       <Text style={styles.subtitulo}>Resumo do consumo elétrico</Text>
 
@@ -85,15 +91,16 @@ export default function Dashboard() {
               height={260}
               yAxisSuffix=' kWh'
               chartConfig={{
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
+                backgroundGradientFrom: theme.colors.background,
+                backgroundGradientTo: theme.colors.background,
                 decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(27, 94, 32, ${opacity})`,
-                labelColor: () => '#000',
+                color: (opacity = 1) =>
+                  theme.colors.primary + Math.round(opacity * 255).toString(16),
+                labelColor: () => theme.colors.onBackground,
                 propsForDots: {
                   r: '4',
                   strokeWidth: '2',
-                  stroke: '#2e7d32',
+                  stroke: theme.colors.primary,
                 },
               }}
               bezier

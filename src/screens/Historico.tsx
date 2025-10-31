@@ -1,7 +1,8 @@
 import FiltroModal from '@components/FiltroModal';
 import { useIsFocused } from '@react-navigation/native';
 import { supabase } from '@services/supabaseClient';
-import { historicoStyles as styles } from '@styles/historicoStyles';
+import { criarHistoricoStyles } from '@styles/historicoStyles';
+import { exportarPDFEscolha } from '@utils/pdfHelper';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import * as Print from 'expo-print';
@@ -9,9 +10,9 @@ import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Button, Card, Text } from 'react-native-paper';
+import { Button, Card, Text, useTheme } from 'react-native-paper';
 
-type Consumo = {
+export type Consumo = {
   id: string;
   data: string;
   consumo_kwh: number;
@@ -26,6 +27,9 @@ export default function HistoricoScreen() {
   const [modalAnoVisivel, setModalAnoVisivel] = useState(false);
   const [itensPorPagina, setItensPorPagina] = useState(5);
   const isFocused = useIsFocused();
+  const theme = useTheme();
+  const styles = criarHistoricoStyles(theme);
+
   useEffect(() => {
     if (isFocused) {
       carregarDados();
@@ -33,66 +37,54 @@ export default function HistoricoScreen() {
   }, [isFocused]);
 
   const exportarPDF = async (dados: Consumo[]) => {
-    const html = `
-    <html>
-      <head>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 24px;
-            font-size: 14px;
-          }
-          h1 {
-            text-align: center;
-            color: #1b5e20;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-          }
-          th, td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: left;
-          }
-          th {
-            background-color: #1b5e20;
-            color: white;
-          }
-          tr:nth-child(even) {
-            background-color: #f2f2f2;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>Histórico de Consumo</h1>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Consumo (kWh)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dados
-              .map(
-                item => `
+    try {
+      const html = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; font-size: 14px; }
+            h1 { text-align: center; color: #1b5e20; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+            th { background-color: #1b5e20; color: white; }
+            tr:nth-child(even) { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <h1>Histórico de Consumo</h1>
+          <table>
+            <thead>
+              <tr><th>Data</th><th>Consumo (kWh)</th></tr>
+            </thead>
+            <tbody>
+              ${dados
+                .map(
+                  item => `
                 <tr>
                   <td>${format(parseISO(item.data), 'dd/MM/yyyy')}</td>
                   <td>${item.consumo_kwh.toFixed(2)}</td>
-                </tr>
-              `,
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </body>
-    </html>
-  `;
+                </tr>`,
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
 
-    const { uri } = await Print.printToFileAsync({ html });
-    await Sharing.shareAsync(uri);
+      const { uri } = await Print.printToFileAsync({ html });
+
+      // Compartilhar diretamente o PDF
+      if (!(await Sharing.isAvailableAsync())) {
+        alert('Compartilhamento não está disponível no seu dispositivo.');
+        return;
+      }
+
+      await Sharing.shareAsync(uri);
+    } catch (err) {
+      console.error('[Exportar PDF] Erro:', err);
+      alert('Erro ao exportar PDF. Verifique permissões ou tente novamente.');
+    }
   };
 
   const carregarDados = async () => {
@@ -165,7 +157,7 @@ export default function HistoricoScreen() {
         <Button
           onPress={() => setModalMesVisivel(true)}
           mode='outlined'
-          textColor='#1b5e20'
+          textColor='#1b5e'
         >
           {filtroMes
             ? `Mês: ${meses.find(m => m.valor === filtroMes)?.nome}`
@@ -175,7 +167,7 @@ export default function HistoricoScreen() {
         <Button
           onPress={() => setModalAnoVisivel(true)}
           mode='outlined'
-          textColor='#1b5e20'
+          textColor='#1b5e'
           style={{ marginLeft: 8 }}
         >
           {filtroAno ? `Ano: ${filtroAno}` : 'Filtrar por ano'}
@@ -193,7 +185,7 @@ export default function HistoricoScreen() {
             setItensPorPagina(prev => (prev === 5 ? 10 : prev === 10 ? 20 : 5))
           }
           mode='outlined'
-          textColor='#1b5e20'
+          textColor='#1b5e'
         >
           Exibir: {itensPorPagina} por página
         </Button>
@@ -232,7 +224,7 @@ export default function HistoricoScreen() {
 
       <Button
         mode='outlined'
-        onPress={() => exportarPDF(dadosFiltrados)}
+        onPress={() => exportarPDFEscolha(dadosFiltrados)}
         style={{ marginBottom: 12 }}
       >
         📄 Exportar PDF

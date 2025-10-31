@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '@services/supabaseClient';
-import { registrarStyles as styles } from '@styles/registrarStyles';
+import { criarRegistrarStyles } from '@styles/registrarStyles';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
@@ -11,6 +11,7 @@ import {
   Provider,
   Text,
   TextInput,
+  useTheme,
 } from 'react-native-paper';
 
 export default function RegistrarConsumoScreen() {
@@ -18,6 +19,9 @@ export default function RegistrarConsumoScreen() {
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [consumo, setConsumo] = useState('');
   const [modalVisivel, setModalVisivel] = useState(false);
+
+  const theme = useTheme();
+  const styles = criarRegistrarStyles(theme);
 
   const abrirModal = () => setModalVisivel(true);
   const fecharModal = () => setModalVisivel(false);
@@ -40,7 +44,6 @@ export default function RegistrarConsumoScreen() {
 
     const dataFormatada = data.toISOString().split('T')[0];
 
-    // Verifica se já existe um registro com essa data para o usuário
     const { data: registrosExistentes, error: erroBusca } = await supabase
       .from('consumo')
       .select('id')
@@ -58,7 +61,6 @@ export default function RegistrarConsumoScreen() {
       return;
     }
 
-    // Se não existe, insere
     const { error } = await supabase.from('consumo').insert([
       {
         user_id: userData.user.id,
@@ -116,13 +118,17 @@ export default function RegistrarConsumoScreen() {
           style={styles.input}
         />
 
-        <Button mode='contained' onPress={handleSubmit} buttonColor='#1b5e20'>
+        <Button
+          mode='contained'
+          onPress={handleSubmit}
+          buttonColor={theme.colors.primary}
+        >
           Salvar
         </Button>
 
         <Button
           onPress={abrirModal}
-          textColor='#1b5e20'
+          textColor={theme.colors.primary}
           style={{ marginTop: 16 }}
         >
           Quer facilitar? Use a versão automática
@@ -150,7 +156,7 @@ export default function RegistrarConsumoScreen() {
               <Button
                 onPress={fecharModal}
                 style={styles.botaoFechar}
-                textColor='#fff'
+                textColor={theme.colors.onPrimary}
               >
                 Fechar
               </Button>
