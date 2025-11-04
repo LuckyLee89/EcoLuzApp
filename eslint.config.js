@@ -6,5 +6,13 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
+    overrides: [
+      {
+        files: ['supabase/functions/**/*.ts'],
+        rules: {
+          'import/no-unresolved': 'off',
+        },
+      },
+    ],
   },
 ]);

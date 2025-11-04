@@ -36,6 +36,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "declarations.d.ts"
+    "declarations.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ]
 }

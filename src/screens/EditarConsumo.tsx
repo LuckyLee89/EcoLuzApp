@@ -1,19 +1,21 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '@services/supabaseClient';
-import { registrarStyles as styles } from '@styles/registrarStyles';
+import { criarRegistrarStyles } from '@styles/registrarStyles';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 
 export default function EditarConsumoScreen() {
+  const theme = useTheme();
+  const styles = criarRegistrarStyles(theme);
+
   const params = useLocalSearchParams();
 
-  const paramId = params.id as string | undefined;
+  const id = params.id as string | undefined;
   const dataParam = params.data as string | undefined;
   const consumoParam = params.consumo as string | undefined;
 
-  const [idRegistro, setIdRegistro] = useState<string | null>(paramId ?? null);
   const [data, setData] = useState(
     dataParam ? new Date(dataParam) : new Date(),
   );
@@ -27,43 +29,6 @@ export default function EditarConsumoScreen() {
     if (dataParam) setData(new Date(dataParam));
     if (consumoParam) setConsumo(consumoParam);
   }, [dataParam, consumoParam]);
-  useEffect(() => {
-    if (!paramId && !dataParam) {
-      Alert.alert(
-        'Acesso inválido',
-        'A tela de edição deve ser acessada através do histórico.',
-      );
-      router.replace('/(tabs)/historico');
-    }
-  }, [dataParam, paramId]);
-
-  useEffect(() => {
-    const buscarIdPorData = async () => {
-      if (paramId || !dataParam) return;
-
-      const { data: session } = await supabase.auth.getUser();
-      const user = session?.user;
-      if (!user) {
-        Alert.alert('Erro', 'Usuário não autenticado.');
-        return;
-      }
-
-      const { data: resultado } = await supabase
-        .from('consumo')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('data', dataParam)
-        .single();
-
-      if (resultado?.id) {
-        setIdRegistro(resultado.id);
-      } else {
-        Alert.alert('Erro', 'Registro não encontrado para a data informada.');
-      }
-    };
-
-    buscarIdPorData();
-  }, [dataParam, paramId]);
 
   const aoSelecionarData = (_: any, selectedDate?: Date) => {
     setMostrarPicker(Platform.OS === 'ios');
@@ -71,7 +36,7 @@ export default function EditarConsumoScreen() {
   };
 
   const handleEditar = async () => {
-    if (!idRegistro) {
+    if (!id) {
       Alert.alert('Erro', 'ID do registro não encontrado.');
       return;
     }
@@ -93,10 +58,6 @@ export default function EditarConsumoScreen() {
     const antigaData = dataParam ?? '';
     const antigoConsumo = parseFloat(consumoParam ?? '0');
 
-    console.log('Comparando dados...');
-    console.log('Antiga data:', antigaData, 'Nova data:', novaData);
-    console.log('Antigo consumo:', antigoConsumo, 'Novo consumo:', novoConsumo);
-
     if (novaData === antigaData && novoConsumo === antigoConsumo) {
       Alert.alert('Aviso', 'Nenhum dado foi alterado.');
       return;
@@ -105,17 +66,15 @@ export default function EditarConsumoScreen() {
     try {
       setIsSaving(true);
 
-      const { data: updateResult, error } = await supabase
+      const { error } = await supabase
         .from('consumo')
         .update({
           data: novaData,
           consumo_kwh: novoConsumo,
         })
-        .eq('id', idRegistro)
-        .eq('user_id', userData.user.id)
+        .eq('id', id.toString())
+        .eq('user_id', userData.user.id.toString())
         .select();
-
-      console.log('Resultado do update:', updateResult);
 
       if (error) {
         Alert.alert('Erro ao editar', error.message);
@@ -165,7 +124,7 @@ export default function EditarConsumoScreen() {
         mode='contained'
         onPress={handleEditar}
         disabled={isSaving}
-        buttonColor='#1b5e20'
+        buttonColor={theme.colors.primary}
       >
         {isSaving ? 'Salvando...' : 'Salvar alterações'}
       </Button>
