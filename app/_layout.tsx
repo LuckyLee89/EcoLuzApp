@@ -20,9 +20,7 @@ export default function RootLayout() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && pathname !== '/login') {
-        setTimeout(() => {
-          router.replace('/login');
-        }, 0);
+        router.replace('/login');
       }
     });
   }, [router, pathname]);
