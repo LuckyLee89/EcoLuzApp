@@ -1,4 +1,3 @@
-// src/screens/RegistrarConsumo.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '@services/supabaseClient';
@@ -17,13 +16,15 @@ import {
 } from 'react-native-paper';
 
 const KWH_KEY = 'valor_kwh_padrao';
+const LEITURA_KEY = 'ultima_leitura_relogio';
+const USER_KEY = 'last_user_id';
 
 function asNumber(v: string) {
-  // permite vírgula e ponto
   if (!v) return 0;
   const n = parseFloat(v.replace(',', '.').replace(/[^\d.]/g, ''));
   return isNaN(n) ? 0 : n;
 }
+
 const brl = (n: number) =>
   (isNaN(n) ? 0 : n).toLocaleString('pt-BR', {
     style: 'currency',
@@ -36,42 +37,94 @@ export default function RegistrarConsumoScreen() {
 
   const [data, setData] = useState(new Date());
   const [mostrarPicker, setMostrarPicker] = useState(false);
-  const [consumo, setConsumo] = useState('');
+  const [leituraAtual, setLeituraAtual] = useState('');
+  const [ultimaLeitura, setUltimaLeitura] = useState<number | null>(null);
   const [valorKwh, setValorKwh] = useState('');
   const [modalVisivel, setModalVisivel] = useState(false);
 
-  // carrega o kWh salvo anteriormente
+  // ===============================================================
+  // 🔹 Carregar dados + garantir limpeza do AsyncStorage
+  // ===============================================================
   useEffect(() => {
     (async () => {
-      const v = await AsyncStorage.getItem(KWH_KEY);
-      if (v) setValorKwh(v);
+      try {
+        // 🧹 Garante que nada antigo fique armazenado
+        await AsyncStorage.removeItem(LEITURA_KEY);
+        await AsyncStorage.removeItem(KWH_KEY);
+
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        if (!userId) return;
+
+        // 🧩 Se o usuário mudou, limpa todo o cache
+        const lastUser = await AsyncStorage.getItem(USER_KEY);
+        if (lastUser && lastUser !== userId) {
+          console.log('Novo usuário detectado, limpando AsyncStorage...');
+          await AsyncStorage.clear();
+        }
+
+        await AsyncStorage.setItem(USER_KEY, userId);
+
+        // 🔹 Tenta carregar valor do kWh salvo localmente
+        const v = await AsyncStorage.getItem(KWH_KEY);
+        if (v) setValorKwh(v);
+
+        // 🔹 Tenta buscar leitura inicial do Supabase
+        const { data: leituraDb } = await supabase
+          .from('leitura_inicial')
+          .select('leitura_kwh')
+          .eq('user_id', userId)
+          .single();
+
+        if (leituraDb?.leitura_kwh) {
+          setUltimaLeitura(leituraDb.leitura_kwh);
+          await AsyncStorage.setItem(
+            LEITURA_KEY,
+            leituraDb.leitura_kwh.toString(),
+          );
+          return;
+        }
+
+        // 🔹 Se não houver no Supabase, tenta local
+        const ultimaLocal = await AsyncStorage.getItem(LEITURA_KEY);
+        if (ultimaLocal) setUltimaLeitura(parseFloat(ultimaLocal));
+      } catch (error) {
+        console.error('Erro ao carregar dados iniciais:', error);
+      }
     })();
   }, []);
 
-  const consumoNum = asNumber(consumo);
+  const leituraNum = asNumber(leituraAtual);
   const kwhNum = asNumber(valorKwh);
-  const gastoEstimado = consumoNum * kwhNum;
+  const consumoCalculado =
+    ultimaLeitura !== null && leituraNum > 0 ? leituraNum - ultimaLeitura : 0;
+  const gastoEstimado = consumoCalculado * kwhNum;
 
   const abrirModal = () => setModalVisivel(true);
   const fecharModal = () => setModalVisivel(false);
   const abrirLink = () => Linking.openURL('https://exemplo.com/versao-premium');
-
   const abrirPicker = () => setMostrarPicker(true);
+
   const aoSelecionarData = (_: any, selectedDate?: Date) => {
     setMostrarPicker(Platform.OS === 'ios');
     if (selectedDate) setData(selectedDate);
   };
 
+  // ===============================================================
+  // 🔹 Registrar leitura inicial ou consumo normal
+  // ===============================================================
   const handleSubmit = async () => {
     const hoje = new Date();
     if (data > hoje) {
       Alert.alert('Erro', 'A data não pode ser no futuro.');
       return;
     }
-    if (!consumoNum) {
-      Alert.alert('Atenção', 'Informe o consumo (kWh).');
+
+    if (!leituraNum) {
+      Alert.alert('Atenção', 'Informe a leitura atual do relógio.');
       return;
     }
+
     if (!kwhNum) {
       Alert.alert('Atenção', 'Informe o valor do kWh (R$).');
       return;
@@ -79,35 +132,52 @@ export default function RegistrarConsumoScreen() {
 
     const { data: userData, error: errUser } = await supabase.auth.getUser();
     if (errUser || !userData?.user) {
-      Alert.alert('Erro', 'Usuário não autenticado');
+      Alert.alert('Erro', 'Usuário não autenticado.');
       return;
     }
 
+    const userId = userData.user.id;
     const dataFormatada = data.toISOString().split('T')[0];
 
-    const { data: registrosExistentes, error: erroBusca } = await supabase
-      .from('consumo')
-      .select('id')
-      .eq('user_id', userData.user.id)
-      .eq('data', dataFormatada);
+    // 🧭 Primeira leitura
+    if (ultimaLeitura === null) {
+      try {
+        await supabase.from('leitura_inicial').upsert({
+          user_id: userId,
+          leitura_kwh: leituraNum,
+          data_inicial: dataFormatada,
+        });
 
-    if (erroBusca) {
-      Alert.alert('Erro', 'Erro ao verificar registros existentes.');
+        await AsyncStorage.setItem(LEITURA_KEY, leituraAtual);
+        await AsyncStorage.setItem(KWH_KEY, valorKwh);
+        setUltimaLeitura(leituraNum);
+
+        Alert.alert(
+          'Leitura inicial salva',
+          'A partir de agora o app calculará automaticamente seu consumo diário com base nesta leitura.',
+        );
+      } catch (error: any) {
+        Alert.alert('Erro ao salvar leitura inicial', error.message);
+      }
       return;
     }
-    if (registrosExistentes && registrosExistentes.length > 0) {
-      Alert.alert('Atenção', 'Já existe um registro para essa data.');
+
+    // 🧮 Cálculo normal
+    const consumo = leituraNum - ultimaLeitura;
+    if (consumo <= 0) {
+      Alert.alert(
+        'Atenção',
+        'A nova leitura deve ser maior que a leitura anterior.',
+      );
       return;
     }
-
-    // persiste o kWh para os próximos cadastros
-    await AsyncStorage.setItem(KWH_KEY, valorKwh);
 
     const { error } = await supabase.from('consumo').insert([
       {
-        user_id: userData.user.id, // se seu trigger já seta, pode remover
+        user_id: userId,
         data: dataFormatada,
-        consumo_kwh: consumoNum,
+        leitura_atual: leituraNum, // ✅ nova coluna
+        consumo_kwh: consumo,
         valor_kwh: kwhNum,
         custo_estimado: gastoEstimado.toFixed(2),
       },
@@ -115,18 +185,26 @@ export default function RegistrarConsumoScreen() {
 
     if (error) {
       Alert.alert('Erro ao registrar consumo', error.message);
-    } else {
-      Alert.alert('Sucesso', 'Consumo registrado com sucesso!');
-      setData(new Date());
-      setConsumo('');
-      router.push('/'); // Dashboard
+      return;
     }
+
+    await AsyncStorage.setItem(LEITURA_KEY, leituraAtual);
+    await AsyncStorage.setItem(KWH_KEY, valorKwh);
+    setUltimaLeitura(leituraNum);
+
+    Alert.alert('Sucesso', 'Consumo registrado com sucesso!');
+    setData(new Date());
+    setLeituraAtual('');
+    router.push('/(tabs)/historico');
   };
 
+  // ===============================================================
+  // 🔹 Interface
+  // ===============================================================
   return (
     <Provider>
       <View style={styles.container}>
-        <Text style={styles.titulo}>Registrar Consumo</Text>
+        <Text style={styles.titulo}>Registrar Consumo Manual</Text>
 
         <TextInput
           label='Data'
@@ -147,24 +225,21 @@ export default function RegistrarConsumoScreen() {
           />
         )}
 
+        {ultimaLeitura !== null && (
+          <Text style={{ color: '#666', marginBottom: 6 }}>
+            Leitura anterior: {ultimaLeitura.toFixed(2)} kWh
+          </Text>
+        )}
+
         <TextInput
           mode='outlined'
           dense
-          label='Consumo (kWh)'
-          value={consumo}
-          onChangeText={setConsumo}
+          label='Leitura atual do relógio (kWh)'
+          value={leituraAtual}
+          onChangeText={setLeituraAtual}
           keyboardType='decimal-pad'
           style={[styles.input, { paddingTop: 6 }]}
-          placeholder='Ex: 120'
-          theme={{
-            roundness: 8,
-            colors: {
-              primary: theme.colors.primary,
-            },
-            fonts: {
-              labelLarge: { fontSize: 13 },
-            },
-          }}
+          placeholder='Ex: 2578'
         />
 
         <TextInput
@@ -176,30 +251,29 @@ export default function RegistrarConsumoScreen() {
           style={[styles.input, { paddingTop: 8 }]}
           mode='outlined'
           placeholder='Ex: 0,89'
-          right={
-            <TextInput.Icon
-              icon='information-outline'
-              onPress={() =>
-                Alert.alert(
-                  'Como descobrir o valor do kWh',
-                  'Verifique na sua conta de luz o campo "Tarifa de energia". Geralmente entre R$ 0,70 e R$ 1,00 por kWh.',
-                )
-              }
-            />
-          }
         />
 
-        <Text style={{ marginBottom: 12 }}>
-          💰 Gasto estimado:{' '}
-          <Text style={{ fontWeight: 'bold' }}>{brl(gastoEstimado)}</Text>
-        </Text>
+        {ultimaLeitura !== null && (
+          <View style={{ marginVertical: 10 }}>
+            <Text style={{ marginBottom: 4 }}>
+              ⚡ Consumo calculado:{' '}
+              <Text style={{ fontWeight: 'bold' }}>
+                {consumoCalculado.toFixed(2)} kWh
+              </Text>
+            </Text>
+            <Text>
+              💰 Gasto estimado:{' '}
+              <Text style={{ fontWeight: 'bold' }}>{brl(gastoEstimado)}</Text>
+            </Text>
+          </View>
+        )}
 
         <Button
           mode='contained'
           onPress={handleSubmit}
           buttonColor={theme.colors.primary}
         >
-          Salvar
+          {ultimaLeitura === null ? 'Salvar leitura inicial' : 'Salvar consumo'}
         </Button>
 
         <Button
@@ -207,7 +281,7 @@ export default function RegistrarConsumoScreen() {
           textColor={theme.colors.primary}
           style={{ marginTop: 16 }}
         >
-          Quer facilitar? Use a versão automática
+          Quer automatizar? Conheça a versão com sensores
         </Button>
 
         <Portal>

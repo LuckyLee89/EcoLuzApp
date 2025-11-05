@@ -90,7 +90,42 @@ export default function ConfiguracoesScreen() {
           Assinar Ecoluz Premium
         </Button>
 
-        <Button mode='outlined' onPress={logout} style={styles.botao}>
+        <Button
+          mode='outlined'
+          onPress={async () => {
+            try {
+              Alert.alert('Sair do app', 'Deseja realmente sair?', [
+                {
+                  text: 'Cancelar',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Sim',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      // 1️⃣ Faz logout no Supabase
+                      await logout();
+                      await AsyncStorage.clear();
+
+                      // 2️⃣ (Opcional) log para debug
+                      console.log('Usuário saiu e dados locais foram limpos.');
+
+                      // 3️⃣ Redireciona para tela de login
+                      router.replace('/login');
+                    } catch (err) {
+                      console.error('Erro ao sair:', err);
+                      Alert.alert('Erro', 'Não foi possível sair do app.');
+                    }
+                  },
+                },
+              ]);
+            } catch (err) {
+              console.error('Erro inesperado no logout:', err);
+            }
+          }}
+          style={styles.botao}
+        >
           🚪 Sair do app
         </Button>
       </List.Section>

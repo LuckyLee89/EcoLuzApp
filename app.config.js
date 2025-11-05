@@ -5,6 +5,7 @@ export default {
     name: 'EcoluzApp',
     slug: 'ecoluzapp',
     version: '1.0.0',
+    owner: 'luckylee89',
     orientation: 'portrait',
     icon: './src/assets/images/icon.png',
     scheme: 'ecoluzapp',
@@ -34,6 +35,7 @@ export default {
       favicon: './src/assets/images/favicon.png',
     },
     plugins: [
+      'react-native-app-auth',
       'expo-router',
       [
         'expo-splash-screen',

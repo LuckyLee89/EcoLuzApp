@@ -19,6 +19,8 @@ export type Consumo = {
 
 export default function HistoricoScreen() {
   const [dados, setDados] = useState<Consumo[]>([]);
+  const [leituraInicial, setLeituraInicial] = useState<number | null>(null);
+  const [dataInicial, setDataInicial] = useState<string | null>(null);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [filtroAno, setFiltroAno] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
@@ -38,6 +40,7 @@ export default function HistoricoScreen() {
     const user = session?.user;
     if (!user) return;
 
+    // 🔹 Busca registros de consumo
     const { data, error } = await supabase
       .from('consumo')
       .select('*')
@@ -45,6 +48,18 @@ export default function HistoricoScreen() {
       .order('data', { ascending: false });
 
     if (!error && data) setDados(data as Consumo[]);
+
+    // 🔹 Busca leitura inicial
+    const { data: leituraInicialData } = await supabase
+      .from('leitura_inicial')
+      .select('leitura_kwh, data_inicial')
+      .eq('user_id', user.id)
+      .single();
+
+    if (leituraInicialData) {
+      setLeituraInicial(leituraInicialData.leitura_kwh);
+      setDataInicial(leituraInicialData.data_inicial);
+    }
   };
 
   const limparFiltros = () => {
@@ -57,6 +72,7 @@ export default function HistoricoScreen() {
     const data = parseISO(item.data);
     const ano = String(data.getFullYear());
     const mes = String(data.getMonth() + 1).padStart(2, '0');
+
     return (
       (!filtroAno || filtroAno === ano) && (!filtroMes || filtroMes === mes)
     );
@@ -89,6 +105,16 @@ export default function HistoricoScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.titulo}>📅 Histórico de Consumo</Text>
+
+      {leituraInicial !== null && (
+        <Text style={styles.textoSecundario}>
+          🔸 Leitura inicial:{' '}
+          <Text style={{ fontWeight: 'bold' }}>
+            {leituraInicial.toFixed(2)} kWh
+          </Text>{' '}
+          ({new Date(dataInicial ?? '').toLocaleDateString('pt-BR')})
+        </Text>
+      )}
 
       <View style={styles.filtros}>
         <Button mode='outlined' onPress={() => setModalMesVisivel(true)}>

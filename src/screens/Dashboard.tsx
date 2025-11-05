@@ -34,6 +34,8 @@ export default function DashboardScreen() {
   const [dados, setDados] = useState<Consumo[]>([]);
   const [total, setTotal] = useState(0);
   const [totalGasto, setTotalGasto] = useState(0);
+  const [totalAcumulado, setTotalAcumulado] = useState(0);
+  const [leituraInicial, setLeituraInicial] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -44,6 +46,7 @@ export default function DashboardScreen() {
       const user = session?.user;
       if (!user) return;
 
+      // 🔹 Busca registros de consumo
       const { data, error } = await supabase
         .from('consumo')
         .select('*')
@@ -58,9 +61,25 @@ export default function DashboardScreen() {
       const registros = data as Consumo[];
       setDados(registros);
 
-      const hoje = new Date();
+      // 🔹 Busca leitura inicial no Supabase
+      const { data: leituraInicialData } = await supabase
+        .from('leitura_inicial')
+        .select('leitura_kwh')
+        .eq('user_id', user.id)
+        .single();
 
-      // 🔹 Consumo total no mês
+      const leituraBase = leituraInicialData?.leitura_kwh ?? 0;
+      setLeituraInicial(leituraBase);
+
+      // 🔹 Consumo total acumulado (desde o início)
+      const totalAcumulado = registros.reduce(
+        (sum, i) => sum + Number(i.consumo_kwh),
+        0,
+      );
+      setTotalAcumulado(totalAcumulado);
+
+      // 🔹 Totais mensais
+      const hoje = new Date();
       const totalMes = registros
         .filter(i => {
           const d = new Date(i.data);
@@ -71,9 +90,6 @@ export default function DashboardScreen() {
         })
         .reduce((sum, i) => sum + Number(i.consumo_kwh), 0);
 
-      setTotal(totalMes);
-
-      // 🔹 Gasto total no mês
       const totalGastoMes = registros
         .filter(i => {
           const d = new Date(i.data);
@@ -87,6 +103,7 @@ export default function DashboardScreen() {
           0,
         );
 
+      setTotal(totalMes);
       setTotalGasto(totalGastoMes);
     } finally {
       setLoading(false);
@@ -105,7 +122,25 @@ export default function DashboardScreen() {
     carregarDados();
   };
 
-  const ultimos = dados.slice(0, 30).reverse();
+  // ==========================================================
+  // 🔹 FILTRO E GRÁFICOS — MÊS ATUAL
+  // ==========================================================
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth();
+
+  const dadosMesAtual = dados.filter(i => {
+    const d = new Date(i.data);
+    return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+  });
+
+  dadosMesAtual.sort(
+    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
+  );
+
+  const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+  const ultimos = dadosMesAtual.slice(-diasNoMes);
+
   const labels = ultimos.map(i =>
     new Date(i.data).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -122,6 +157,9 @@ export default function DashboardScreen() {
     valores.length * 60,
   );
 
+  // ==========================================================
+  // 🔹 INTERFACE
+  // ==========================================================
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -161,6 +199,16 @@ export default function DashboardScreen() {
         >
           R$ {totalGasto.toFixed(2)}
         </Text>
+
+        {leituraInicial !== null && (
+          <>
+            <View style={{ height: 12 }} />
+            <Text style={styles.totalTexto}>🔸 Desde o início:</Text>
+            <Text style={styles.totalValor}>
+              {totalAcumulado.toFixed(1)} kWh
+            </Text>
+          </>
+        )}
       </View>
 
       {/* ====== Gráfico de consumo ====== */}
@@ -246,10 +294,9 @@ export default function DashboardScreen() {
       )}
 
       {/* ====== Lista ====== */}
-      {/* ====== Lista ====== */}
       <Text style={styles.listaTitulo}>Últimos registros:</Text>
 
-      {dados.slice(0, 10).map(item => (
+      {dadosMesAtual.slice(0, 10).map(item => (
         <TouchableRipple
           key={item.id}
           rippleColor='rgba(0,0,0,0.1)'
@@ -283,7 +330,6 @@ export default function DashboardScreen() {
                   })}
                 </Text>
 
-                {/* Consumo em destaque */}
                 <Text
                   style={{
                     color: theme.colors.primary,
@@ -294,12 +340,10 @@ export default function DashboardScreen() {
                   ⚡ {item.consumo_kwh.toFixed(2)} kWh
                 </Text>
 
-                {/* Valor do kWh */}
                 <Text style={{ color: '#666', fontSize: 14 }}>
                   💰 R$ {item.valor_kwh?.toFixed(2) || '0,00'} /kWh
                 </Text>
 
-                {/* Custo total */}
                 <Text
                   style={{
                     color: theme.colors.tertiary || '#b33',
