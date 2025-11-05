@@ -1,36 +1,33 @@
 import { StyleSheet } from 'react-native';
+import { MD3Theme } from 'react-native-paper';
 
-export const loginStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#e0f7f1',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: 'bold',
-    color: '#1b5e20',
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 24,
-    color: '#388e3c',
-  },
-  input: {
-    marginBottom: 12,
-  },
-  button: {
-    marginTop: 12,
-    backgroundColor: '#1b5e20',
-  },
-  logo: {
-    width: 240,
-    height: 240,
-    marginBottom: 20,
-    alignSelf: 'center',
-  },
-});
+export const criarLoginStyles = (theme: MD3Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      padding: 24,
+      backgroundColor: theme.colors.background, // tema claro/escuro
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      textAlign: 'center',
+      color: theme.colors.onBackground,
+      marginBottom: 32,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    button: {
+      marginTop: 12,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+    },
+  });

@@ -10,6 +10,8 @@ export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const rotasPublicas = ['/login', '/cadastro', '/recuperar'];
+
   useEffect(() => {
     (async () => {
       const preferencia = await AsyncStorage.getItem('preferencia_tema');
@@ -19,7 +21,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session && pathname !== '/login') {
+      if (!session && !rotasPublicas.includes(pathname)) {
         router.replace('/login');
       }
     });

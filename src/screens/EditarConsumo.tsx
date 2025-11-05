@@ -4,31 +4,41 @@ import { criarRegistrarStyles } from '@styles/registrarStyles';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
-import { Button, Text, TextInput, useTheme } from 'react-native-paper';
+import {
+  Button,
+  IconButton,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
 
 export default function EditarConsumoScreen() {
   const theme = useTheme();
   const styles = criarRegistrarStyles(theme);
-
   const params = useLocalSearchParams();
 
+  // parâmetros recebidos
   const id = params.id as string | undefined;
   const dataParam = params.data as string | undefined;
   const consumoParam = params.consumo as string | undefined;
+  const valorKwhParam = params.valor_kwh as string | undefined;
 
+  // estados locais
   const [data, setData] = useState(
     dataParam ? new Date(dataParam) : new Date(),
   );
   const [consumo, setConsumo] = useState(consumoParam || '');
+  const [valorKwh, setValorKwh] = useState(valorKwhParam || '');
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  const abrirPicker = () => setMostrarPicker(true);
 
   useEffect(() => {
     if (dataParam) setData(new Date(dataParam));
     if (consumoParam) setConsumo(consumoParam);
-  }, [dataParam, consumoParam]);
+    if (valorKwhParam) setValorKwh(valorKwhParam);
+  }, [dataParam, consumoParam, valorKwhParam]);
+
+  const abrirPicker = () => setMostrarPicker(true);
 
   const aoSelecionarData = (_: any, selectedDate?: Date) => {
     setMostrarPicker(Platform.OS === 'ios');
@@ -55,13 +65,8 @@ export default function EditarConsumoScreen() {
 
     const novaData = data.toISOString().split('T')[0];
     const novoConsumo = parseFloat(consumo);
-    const antigaData = dataParam ?? '';
-    const antigoConsumo = parseFloat(consumoParam ?? '0');
-
-    if (novaData === antigaData && novoConsumo === antigoConsumo) {
-      Alert.alert('Aviso', 'Nenhum dado foi alterado.');
-      return;
-    }
+    const novoValorKwh = parseFloat(valorKwh);
+    const novoCusto = novoConsumo * (novoValorKwh || 0);
 
     try {
       setIsSaving(true);
@@ -71,10 +76,11 @@ export default function EditarConsumoScreen() {
         .update({
           data: novaData,
           consumo_kwh: novoConsumo,
+          valor_kwh: novoValorKwh,
+          custo_estimado: novoCusto,
         })
-        .eq('id', id.toString())
-        .eq('user_id', userData.user.id.toString())
-        .select();
+        .eq('id', id)
+        .eq('user_id', userData.user.id);
 
       if (error) {
         Alert.alert('Erro ao editar', error.message);
@@ -89,10 +95,36 @@ export default function EditarConsumoScreen() {
     }
   };
 
+  const gastoEstimado = Number(consumo || 0) * Number(valorKwh || 0);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Editar Consumo</Text>
+      {/* ======= Cabeçalho com seta de voltar ======= */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
+        <IconButton
+          icon='arrow-left'
+          size={26}
+          onPress={() => router.back()}
+          iconColor={theme.colors.primary}
+        />
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: theme.colors.primary,
+          }}
+        >
+          Editar Consumo
+        </Text>
+      </View>
 
+      {/* ======= Formulário ======= */}
       <TextInput
         label='Data'
         value={data.toLocaleDateString('pt-BR')}
@@ -119,6 +151,21 @@ export default function EditarConsumoScreen() {
         keyboardType='numeric'
         style={styles.input}
       />
+
+      <TextInput
+        label='Valor do kWh (R$)'
+        value={valorKwh}
+        onChangeText={setValorKwh}
+        keyboardType='decimal-pad'
+        style={styles.input}
+      />
+
+      <Text style={{ marginBottom: 8, marginTop: 4 }}>
+        💰 Gasto estimado:{' '}
+        <Text style={{ fontWeight: 'bold' }}>
+          R$ {gastoEstimado.toFixed(2)}
+        </Text>
+      </Text>
 
       <Button
         mode='contained'

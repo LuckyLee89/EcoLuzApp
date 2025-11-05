@@ -22,7 +22,6 @@ export default function AssinaturaScreen() {
       }
       const ativa = await verificarAssinaturaAtiva(userId);
       setAssinaturaAtiva(ativa);
-      setAssinaturaAtiva(ativa);
     }
     carregarAssinatura();
   }, []);
@@ -68,7 +67,7 @@ export default function AssinaturaScreen() {
           <Button
             mode='contained'
             style={styles.botaoAssinar}
-            onPress={() => alert('Simulação: Redirecionar para pagamento')}
+            onPress={() => router.push('/assinatura/checkout')}
           >
             Assinar agora
           </Button>

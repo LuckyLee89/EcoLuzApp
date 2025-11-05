@@ -5,9 +5,7 @@ import { criarHistoricoStyles } from '@styles/historicoStyles';
 import { exportarPDFEscolha } from '@utils/pdfHelper';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import * as Print from 'expo-print';
 import { router } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Button, Card, Text, useTheme } from 'react-native-paper';
@@ -16,6 +14,7 @@ export type Consumo = {
   id: string;
   data: string;
   consumo_kwh: number;
+  valor_kwh?: number;
 };
 
 export default function HistoricoScreen() {
@@ -31,61 +30,8 @@ export default function HistoricoScreen() {
   const styles = criarHistoricoStyles(theme);
 
   useEffect(() => {
-    if (isFocused) {
-      carregarDados();
-    }
+    if (isFocused) carregarDados();
   }, [isFocused]);
-
-  const exportarPDF = async (dados: Consumo[]) => {
-    try {
-      const html = `
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; font-size: 14px; }
-            h1 { text-align: center; color: #1b5e20; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
-            th { background-color: #1b5e20; color: white; }
-            tr:nth-child(even) { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          <h1>Histórico de Consumo</h1>
-          <table>
-            <thead>
-              <tr><th>Data</th><th>Consumo (kWh)</th></tr>
-            </thead>
-            <tbody>
-              ${dados
-                .map(
-                  item => `
-                <tr>
-                  <td>${format(parseISO(item.data), 'dd/MM/yyyy')}</td>
-                  <td>${item.consumo_kwh.toFixed(2)}</td>
-                </tr>`,
-                )
-                .join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-      const { uri } = await Print.printToFileAsync({ html });
-
-      // Compartilhar diretamente o PDF
-      if (!(await Sharing.isAvailableAsync())) {
-        alert('Compartilhamento não está disponível no seu dispositivo.');
-        return;
-      }
-
-      await Sharing.shareAsync(uri);
-    } catch (err) {
-      console.error('[Exportar PDF] Erro:', err);
-      alert('Erro ao exportar PDF. Verifique permissões ou tente novamente.');
-    }
-  };
 
   const carregarDados = async () => {
     const { data: session } = await supabase.auth.getUser();
@@ -119,18 +65,6 @@ export default function HistoricoScreen() {
   const dadosPaginados = dadosFiltrados.slice(0, paginaAtual * itensPorPagina);
   const podeCarregarMais = dadosFiltrados.length > dadosPaginados.length;
 
-  const mesesUnicos = [
-    ...new Set(
-      dados.map(i =>
-        (new Date(i.data).getMonth() + 1).toString().padStart(2, '0'),
-      ),
-    ),
-  ];
-
-  const anosUnicos = [
-    ...new Set(dados.map(i => new Date(i.data).getFullYear().toString())),
-  ];
-
   const meses = [
     { nome: 'Todos', valor: '' },
     { nome: 'Janeiro', valor: '01' },
@@ -145,8 +79,11 @@ export default function HistoricoScreen() {
     { nome: 'Outubro', valor: '10' },
     { nome: 'Novembro', valor: '11' },
     { nome: 'Dezembro', valor: '12' },
-  ].filter(m => m.valor === '' || mesesUnicos.includes(m.valor));
+  ];
 
+  const anosUnicos = [
+    ...new Set(dados.map(i => new Date(i.data).getFullYear().toString())),
+  ];
   const anos = ['Todos', ...anosUnicos];
 
   return (
@@ -154,20 +91,14 @@ export default function HistoricoScreen() {
       <Text style={styles.titulo}>📅 Histórico de Consumo</Text>
 
       <View style={styles.filtros}>
-        <Button
-          onPress={() => setModalMesVisivel(true)}
-          mode='outlined'
-          textColor='#1b5e'
-        >
+        <Button mode='outlined' onPress={() => setModalMesVisivel(true)}>
           {filtroMes
             ? `Mês: ${meses.find(m => m.valor === filtroMes)?.nome}`
             : 'Filtrar por mês'}
         </Button>
-
         <Button
-          onPress={() => setModalAnoVisivel(true)}
           mode='outlined'
-          textColor='#1b5e'
+          onPress={() => setModalAnoVisivel(true)}
           style={{ marginLeft: 8 }}
         >
           {filtroAno ? `Ano: ${filtroAno}` : 'Filtrar por ano'}
@@ -179,53 +110,47 @@ export default function HistoricoScreen() {
           Limpar filtro
         </Button>
       )}
-      <View style={[styles.filtros, { marginTop: 12 }]}>
-        <Button
-          onPress={() =>
-            setItensPorPagina(prev => (prev === 5 ? 10 : prev === 10 ? 20 : 5))
-          }
-          mode='outlined'
-          textColor='#1b5e'
-        >
-          Exibir: {itensPorPagina} por página
-        </Button>
 
-        <Text style={{ marginLeft: 12, alignSelf: 'center', color: '#555' }}>
-          Exibindo {dadosPaginados.length} de {dadosFiltrados.length}
-        </Text>
-      </View>
-
-      {dadosPaginados.map(item => (
-        <Card
-          key={item.id}
-          style={styles.card}
-          onPress={() => {
-            console.log('Item clicado:', item);
-            router.push({
-              pathname: '/editar',
-              params: {
-                id: item.id,
-                data: item.data,
-                consumo: item.consumo_kwh.toString(),
-              },
-            });
-          }}
-        >
-          <Card.Content>
-            <Text style={styles.data}>
-              {format(parseISO(item.data), "dd 'de' MMMM 'de' yyyy", {
-                locale: ptBR,
-              })}
-            </Text>
-            <Text style={styles.kwh}>{item.consumo_kwh.toFixed(2)} kWh</Text>
-          </Card.Content>
-        </Card>
-      ))}
+      {dadosPaginados.map(item => {
+        const custo = Number(item.consumo_kwh) * Number(item.valor_kwh || 0);
+        return (
+          <Card
+            key={item.id}
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: '/editar',
+                params: {
+                  id: item.id,
+                  data: item.data,
+                  consumo: item.consumo_kwh.toString(),
+                  valor_kwh: item.valor_kwh ? String(item.valor_kwh) : '',
+                },
+              })
+            }
+          >
+            <Card.Content>
+              <Text style={styles.data}>
+                {format(parseISO(item.data), "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
+              </Text>
+              <Text style={styles.kwh}>
+                ⚡ {item.consumo_kwh.toFixed(2)} kWh
+              </Text>
+              <Text style={styles.valor}>
+                💰 R$ {item.valor_kwh?.toFixed(2) || '0,00'} /kWh
+              </Text>
+              <Text style={styles.custo}>Total: R$ {custo.toFixed(2)}</Text>
+            </Card.Content>
+          </Card>
+        );
+      })}
 
       <Button
         mode='outlined'
         onPress={() => exportarPDFEscolha(dadosFiltrados)}
-        style={{ marginBottom: 12 }}
+        style={{ marginTop: 16 }}
       >
         📄 Exportar PDF
       </Button>
@@ -239,14 +164,10 @@ export default function HistoricoScreen() {
           Carregar mais
         </Button>
       ) : (
-        <Text
-          style={{ textAlign: 'center', marginVertical: 16, color: '#666' }}
-        >
+        <Text style={styles.textoSecundario}>
           Todos os registros foram exibidos.
         </Text>
       )}
-
-      <View style={{ height: 32 }} />
 
       <FiltroModal
         visivel={modalMesVisivel}

@@ -17,22 +17,34 @@ export const listarDispositivosStyles = (theme: MD3Theme) =>
     titulo: {
       fontSize: 22,
       fontWeight: 'bold',
-      color: theme.colors.primary,
-      marginBottom: 16,
+      color: theme.colors.primary, // verde principal
+      marginBottom: 20,
+      textAlign: 'center',
     },
     semDados: {
       textAlign: 'center',
-      color: theme.colors.onBackground,
+      color: '#777',
       marginTop: 40,
     },
     card: {
-      marginBottom: 10,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderLeftWidth: 4,
-      borderLeftColor: theme.colors.secondary,
+      marginBottom: 14,
+      backgroundColor: theme.colors.surface, // tom mais claro, harmônico com o verde
+      borderRadius: 12,
+      borderLeftWidth: 5,
+      borderLeftColor: theme.colors.primary, // verde principal
+      padding: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
     },
     info: {
-      color: theme.colors.onSurface,
+      color: '#333',
       fontSize: 14,
+    },
+    labelData: {
+      color: '#666',
+      marginTop: 6,
+      fontSize: 13,
     },
   });

@@ -28,7 +28,7 @@ export default function MenuDispositivos() {
           </Button>
 
           <Button
-            mode='contained-tonal'
+            mode='contained'
             style={estilos.botao}
             onPress={() =>
               router.push('/(tabs)/dispositivos/registrar_dispositivos')

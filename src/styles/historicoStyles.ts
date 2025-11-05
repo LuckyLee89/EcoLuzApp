@@ -55,6 +55,16 @@ export const criarHistoricoStyles = (theme: MD3Theme) =>
       fontSize: 16,
       color: theme.colors.onSurface,
     },
+    valor: {
+      fontSize: 15,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 2,
+    },
+    custo: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.tertiary || '#2e7d32',
+    },
     textoSecundario: {
       color: theme.colors.onSurface,
       textAlign: 'center',

@@ -15,8 +15,13 @@ export const criarRegistrarStyles = (theme: MD3Theme) =>
       marginBottom: 20,
       color: theme.colors.primary,
     },
+    label: {
+      fontSize: 16,
+      marginTop: 12,
+    },
     input: {
       marginBottom: 16,
+      backgroundColor: theme.colors.surface,
     },
     modal: {
       backgroundColor: theme.colors.surface,

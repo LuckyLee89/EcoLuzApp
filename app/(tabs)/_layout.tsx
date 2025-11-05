@@ -11,7 +11,8 @@ type Aba = {
   name: string;
   title: string;
   icon: string;
-  href?: string;
+  href?: string | null; // ✅ permite null
+  options?: object; // ✅ permite definir tabBarButton
 };
 
 export default function TabsLayout() {
@@ -78,7 +79,11 @@ export default function TabsLayout() {
         name: 'dispositivos',
         title: 'Dispositivos',
         icon: 'devices',
-        href: assinaturaAtiva ? '/(tabs)/dispositivos' : undefined, // ✅ bloqueia menu
+        // 🚫 Evita criar o botão clicável quando assinatura está inativa
+        href: assinaturaAtiva ? '/(tabs)/dispositivos' : null,
+        options: {
+          tabBarButton: assinaturaAtiva ? undefined : () => null, // 🔒 oculta completamente a aba
+        },
       },
     ],
     [assinaturaAtiva],

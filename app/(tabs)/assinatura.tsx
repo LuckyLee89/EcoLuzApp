@@ -1,2 +1,2 @@
-import AssinaturaScreen from '@screens/Assinatura';
+import AssinaturaScreen from '@screens/AssinaturaScreen';
 export default AssinaturaScreen;
