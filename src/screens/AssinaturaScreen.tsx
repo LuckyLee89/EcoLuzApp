@@ -40,8 +40,9 @@ export default function AssinaturaScreen() {
         <>
           <Text style={styles.titulo}>🌟 Plano Premium Ativo</Text>
           <Text style={styles.descricao}>
-            Obrigado por apoiar o EcoLuz! Agora você tem acesso total aos
-            dispositivos inteligentes e ao monitoramento em tempo real.
+            Obrigado por apoiar o EcoLuz! Agora você tem acesso total ao
+            monitoramento automático via sensores ESP32 + PZEM e aos gráficos em
+            tempo real.
           </Text>
 
           <Button
@@ -54,15 +55,20 @@ export default function AssinaturaScreen() {
         </>
       ) : (
         <>
-          <Text style={styles.titulo}>✨ Versão Premium</Text>
+          <Text style={styles.titulo}>⚡ Versão Premium</Text>
           <Text style={styles.descricao}>
-            Conecte sua conta com dispositivos inteligentes e registre
-            automaticamente seu consumo. Ganhe tempo e evite erros.
+            Desbloqueie o modo automático do EcoLuz e veja seus dados em tempo
+            real, direto dos sensores conectados a sua casa.
           </Text>
 
-          <Text style={styles.beneficio}>✅ Registro automático com Tuya</Text>
-          <Text style={styles.beneficio}>✅ Acompanhamento em tempo real</Text>
-          <Text style={styles.beneficio}>✅ Sem erros manuais</Text>
+          <Text style={styles.beneficio}>
+            ✅ Monitoramento via ESP32 + PZEM
+          </Text>
+          <Text style={styles.beneficio}>✅ Leitura em tempo real</Text>
+          <Text style={styles.beneficio}>
+            ✅ Relatórios e histórico automáticos
+          </Text>
+          <Text style={styles.beneficio}>✅ Backup seguro no Supabase</Text>
 
           <Button
             mode='contained'

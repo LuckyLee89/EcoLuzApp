@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Slot, usePathname, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { PaperProvider } from 'react-native-paper';
 import { supabase } from '../src/services/supabaseClient';
@@ -12,6 +12,7 @@ export default function RootLayout() {
 
   const rotasPublicas = ['/login', '/cadastro', '/recuperar'];
 
+  // 🔹 Carrega tema salvo no AsyncStorage
   useEffect(() => {
     (async () => {
       const preferencia = await AsyncStorage.getItem('preferencia_tema');
@@ -19,6 +20,7 @@ export default function RootLayout() {
     })();
   }, []);
 
+  // 🔹 Verifica sessão do usuário
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && !rotasPublicas.includes(pathname)) {
@@ -27,9 +29,21 @@ export default function RootLayout() {
     });
   }, [router, pathname]);
 
+  // 🔹 Estrutura principal de navegação (Tabs + Stack)
   return (
     <PaperProvider theme={theme}>
-      <Slot />
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Grupo principal de abas */}
+        <Stack.Screen name='(tabs)' />
+
+        {/* Grupo stack — exibe cabeçalhos automaticamente */}
+        <Stack.Screen
+          name='stack'
+          options={{
+            headerShown: false, // o próprio stack interno gerencia os headers
+          }}
+        />
+      </Stack>
     </PaperProvider>
   );
 }

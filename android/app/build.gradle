@@ -94,8 +94,16 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
-        manifestPlaceholders = [appAuthRedirectScheme: "ecoluzapp"]
-        
+    }
+    // Configure Java and Kotlin compilation targets. To use Java 21 ensure a JDK 21
+    // is available (set via `org.gradle.java.home` in gradle.properties or system JAVA_HOME).
+    compileOptions {
+        sourceCompatibility JavaVersion.toVersion(21)
+        targetCompatibility JavaVersion.toVersion(21)
+    }
+    kotlinOptions {
+        // JVM target for Kotlin code — set to 21 to match Java toolchain.
+        jvmTarget = "21"
     }
     signingConfigs {
         debug {

@@ -1,3 +1,4 @@
+import { Picker } from '@react-native-picker/picker';
 import { supabase } from '@services/supabaseClient';
 import { criarAssinaturaCheckoutStyles } from '@styles/assinaturaCheckoutStyles';
 import { router } from 'expo-router';
@@ -64,6 +65,8 @@ export default function AssinaturaCheckout() {
   const theme = useTheme();
   const styles = criarAssinaturaCheckoutStyles(theme);
 
+  const [plano, setPlano] = useState<'mensal' | 'anual'>('mensal');
+  const [valor, setValor] = useState(29.9);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [cartao, setCartao] = useState('');
@@ -84,11 +87,16 @@ export default function AssinaturaCheckout() {
     carregarUsuario();
   }, []);
 
+  /* ======= Alterar valor conforme plano ======= */
+  useEffect(() => {
+    // Preços que já embutem custo do hardware e tutorial em vídeo
+    if (plano === 'mensal') setValor(29.9); // R$29,90/mês
+    else setValor(299.9); // R$299,90/ano (economia de 2 meses)
+  }, [plano]);
+
   /* ======= Validações ======= */
   const handleAssinar = async () => {
     const cardDigits = onlyDigits(cartao);
-    const validadeDigits = onlyDigits(validade);
-
     if (!nome.trim())
       return Alert.alert('Erro', 'O nome completo é obrigatório.');
     if (!email.trim()) return Alert.alert('Erro', 'O e-mail é obrigatório.');
@@ -121,9 +129,9 @@ export default function AssinaturaCheckout() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            plano: 'Premium',
+            plano,
+            valor,
             card_last4: cardDigits.slice(-4),
-            card_expiry: validade,
             nome,
             email,
           }),
@@ -133,7 +141,12 @@ export default function AssinaturaCheckout() {
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Erro desconhecido');
 
-      Alert.alert('Sucesso', 'Assinatura ativada com sucesso!');
+      Alert.alert(
+        'Sucesso 🎉',
+        `Assinatura ${
+          plano === 'mensal' ? 'Mensal' : 'Anual'
+        } ativada!\nVocê receberá um e-mail com o vídeo de instalação do sensor ESP32 + PZEM.`,
+      );
       router.replace('/(tabs)/assinatura');
     } catch (err: any) {
       Alert.alert('Erro ao assinar', err.message || 'Tente novamente.');
@@ -145,8 +158,31 @@ export default function AssinaturaCheckout() {
   /* ======= Render ======= */
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>💳 Finalizar Assinatura</Text>
-      <Text style={styles.subtitulo}>Plano Premium — R$ 19,90/mês</Text>
+      <Text style={styles.titulo}>💡 Escolha seu plano EcoLuz</Text>
+
+      <Picker
+        selectedValue={plano}
+        onValueChange={value => setPlano(value)}
+        style={{
+          backgroundColor: theme.colors.surface,
+          borderRadius: 8,
+          marginVertical: 10,
+        }}
+      >
+        <Picker.Item label='Mensal — R$ 29,90' value='mensal' />
+        <Picker.Item label='Anual — R$ 299,90 (2 meses grátis)' value='anual' />
+      </Picker>
+
+      <Text style={styles.subtitulo}>
+        {plano === 'mensal'
+          ? '💰 Plano Mensal — R$ 29,90/mês'
+          : '💰 Plano Anual — R$ 299,90/ano (economia de R$ 60,00)'}
+      </Text>
+
+      <Text style={{ marginVertical: 8, color: '#555', textAlign: 'center' }}>
+        📦 O valor já inclui o custo do equipamento (ESP32 + PZEM) e você
+        receberá um vídeo explicativo de instalação simples.
+      </Text>
 
       <TextInput
         label='Nome completo'
@@ -165,7 +201,6 @@ export default function AssinaturaCheckout() {
         autoCapitalize='none'
       />
 
-      {/* ======= Número do cartão ======= */}
       <TextInput
         label='Número do cartão'
         value={cartao}
@@ -181,7 +216,6 @@ export default function AssinaturaCheckout() {
         returnKeyType='next'
       />
 
-      {/* ======= Validade + CVV ======= */}
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <TextInput
           ref={validadeRef}
@@ -196,7 +230,6 @@ export default function AssinaturaCheckout() {
           style={[styles.input, { flex: 1 }]}
           placeholder='MM/AA'
           maxLength={5}
-          returnKeyType='next'
         />
         <TextInput
           ref={cvvRef}
@@ -207,7 +240,6 @@ export default function AssinaturaCheckout() {
           style={[styles.input, { flex: 1 }]}
           placeholder='123'
           maxLength={4}
-          returnKeyType='done'
         />
       </View>
 

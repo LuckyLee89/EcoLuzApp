@@ -1,5 +1,6 @@
 import { supabase } from '@services/supabaseClient';
 import { criarLoginStyles } from '@styles/loginStyles';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, View } from 'react-native';
@@ -12,6 +13,7 @@ export default function CadastroUsuarioScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleCadastro = async () => {
     if (senha !== confirmarSenha) {
@@ -19,20 +21,41 @@ export default function CadastroUsuarioScreen() {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-    });
+    setLoading(true);
 
-    if (error) {
-      console.error(error.message);
-      Alert.alert('Erro ao cadastrar', error.message);
-    } else {
+    try {
+      // 🔹 Define URL de redirecionamento conforme ambiente (Expo Go ou nativo)
+      const redirectTo =
+        Constants.appOwnership === 'expo'
+          ? 'https://auth.expo.io/@luckylee89/ecoluzapp'
+          : 'ecoluzapp://login';
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+
+      if (error) {
+        console.error(error.message);
+        Alert.alert('Erro ao cadastrar', error.message);
+        return;
+      }
+
+      // 🔹 Mensagem amigável para o usuário
       Alert.alert(
-        'Verifique seu e-mail',
-        'Enviamos um link de confirmação para o seu e-mail. Confirme para ativar sua conta.',
+        'Confirme seu e-mail ✉️',
+        'Enviamos um link de confirmação para o seu e-mail. Clique nele para ativar sua conta e fazer login no app.',
       );
+
       router.replace('/login');
+    } catch (err) {
+      console.error('🔥 Erro inesperado no cadastro:', err);
+      Alert.alert('Erro inesperado', 'Algo deu errado ao tentar cadastrar.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,7 +94,13 @@ export default function CadastroUsuarioScreen() {
         mode='outlined'
       />
 
-      <Button mode='contained' onPress={handleCadastro} style={styles.button}>
+      <Button
+        mode='contained'
+        onPress={handleCadastro}
+        style={styles.button}
+        loading={loading}
+        disabled={loading}
+      >
         Cadastrar
       </Button>
 

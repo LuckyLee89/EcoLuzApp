@@ -69,4 +69,4 @@ src/
 
 ---
 
-Feito com 💡 por [Seu Nome]
+Feito com 💡 por Lincon

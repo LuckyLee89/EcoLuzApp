@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   Card,
   IconButton,
-  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 
@@ -25,6 +24,7 @@ type Consumo = {
   consumo_kwh: number;
   valor_kwh?: number;
   custo_estimado?: number;
+  origem?: string; // 🔹 Adicionado para identificar registros automáticos
 };
 
 export default function DashboardScreen() {
@@ -39,6 +39,9 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // ==========================================================
+  // 🔹 Carregamento de dados
+  // ==========================================================
   const carregarDados = async () => {
     try {
       setLoading(true);
@@ -46,7 +49,6 @@ export default function DashboardScreen() {
       const user = session?.user;
       if (!user) return;
 
-      // 🔹 Busca registros de consumo
       const { data, error } = await supabase
         .from('consumo')
         .select('*')
@@ -61,7 +63,7 @@ export default function DashboardScreen() {
       const registros = data as Consumo[];
       setDados(registros);
 
-      // 🔹 Busca leitura inicial no Supabase
+      // 🔹 Busca leitura inicial
       const { data: leituraInicialData } = await supabase
         .from('leitura_inicial')
         .select('leitura_kwh')
@@ -71,14 +73,13 @@ export default function DashboardScreen() {
       const leituraBase = leituraInicialData?.leitura_kwh ?? 0;
       setLeituraInicial(leituraBase);
 
-      // 🔹 Consumo total acumulado (desde o início)
+      // 🔹 Totais
       const totalAcumulado = registros.reduce(
         (sum, i) => sum + Number(i.consumo_kwh),
         0,
       );
       setTotalAcumulado(totalAcumulado);
 
-      // 🔹 Totais mensais
       const hoje = new Date();
       const totalMes = registros
         .filter(i => {
@@ -123,7 +124,7 @@ export default function DashboardScreen() {
   };
 
   // ==========================================================
-  // 🔹 FILTRO E GRÁFICOS — MÊS ATUAL
+  // 🔹 Dados para gráficos
   // ==========================================================
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
@@ -138,17 +139,15 @@ export default function DashboardScreen() {
     (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime(),
   );
 
-  const diasNoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-  const ultimos = dadosMesAtual.slice(-diasNoMes);
-
-  const labels = ultimos.map(i =>
+  const labels = dadosMesAtual.map(i =>
     new Date(i.data).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
     }),
   );
-  const valores = ultimos.map(i => Number(i.consumo_kwh.toFixed(1)));
-  const custos = ultimos.map(
+
+  const valores = dadosMesAtual.map(i => Number(i.consumo_kwh.toFixed(1)));
+  const custos = dadosMesAtual.map(
     i => Number(i.consumo_kwh) * Number(i.valor_kwh || 0),
   );
 
@@ -158,7 +157,7 @@ export default function DashboardScreen() {
   );
 
   // ==========================================================
-  // 🔹 INTERFACE
+  // 🔹 Renderização
   // ==========================================================
   if (loading) {
     return (
@@ -230,9 +229,7 @@ export default function DashboardScreen() {
                   backgroundGradientFrom: theme.colors.background,
                   backgroundGradientTo: theme.colors.background,
                   decimalPlaces: 1,
-                  color: (opacity = 1) =>
-                    theme.colors.primary +
-                    Math.round(opacity * 255).toString(16),
+                  color: () => theme.colors.primary,
                   labelColor: () => theme.colors.onBackground,
                   propsForDots: {
                     r: '4',
@@ -268,11 +265,7 @@ export default function DashboardScreen() {
                   backgroundGradientFrom: theme.colors.background,
                   backgroundGradientTo: theme.colors.background,
                   decimalPlaces: 2,
-                  color: (opacity = 1) =>
-                    theme.colors.tertiary
-                      ? theme.colors.tertiary +
-                        Math.round(opacity * 255).toString(16)
-                      : '#2e7d32',
+                  color: () => theme.colors.tertiary || '#2e7d32',
                   labelColor: () => theme.colors.onBackground,
                   propsForDots: {
                     r: '4',
@@ -293,72 +286,86 @@ export default function DashboardScreen() {
         </>
       )}
 
-      {/* ====== Lista ====== */}
+      {/* ====== Lista de registros ====== */}
       <Text style={styles.listaTitulo}>Últimos registros:</Text>
 
       {dadosMesAtual.slice(0, 10).map(item => (
-        <TouchableRipple
-          key={item.id}
-          rippleColor='rgba(0,0,0,0.1)'
-          borderless={false}
-          onPress={() =>
-            router.push({
-              pathname: '/editar',
-              params: {
-                id: item.id,
-                data: item.data,
-                consumo: String(item.consumo_kwh),
-                valor_kwh: item.valor_kwh ? String(item.valor_kwh) : '',
-              },
-            })
-          }
-        >
-          <Card style={styles.cardItem}>
-            <Card.Content
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <View>
-                <Text style={styles.data}>
-                  {new Date(item.data).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
-                </Text>
+        <Card key={item.id} style={styles.cardItem}>
+          <Card.Content
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <View>
+              <Text style={styles.data}>
+                {new Date(item.data).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </Text>
 
+              <Text
+                style={{
+                  color: theme.colors.primary,
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                }}
+              >
+                ⚡ {item.consumo_kwh.toFixed(2)} kWh
+              </Text>
+
+              <Text style={{ color: '#666', fontSize: 14 }}>
+                💰 R$ {item.valor_kwh?.toFixed(2) || '0,00'} /kWh
+              </Text>
+
+              <Text
+                style={{
+                  color: theme.colors.tertiary || '#b33',
+                  fontWeight: 'bold',
+                  fontSize: 15,
+                }}
+              >
+                Total: R$ {(item.custo_estimado ?? 0).toFixed(2)}
+              </Text>
+
+              {/* 🔹 Exibe aviso se automático */}
+              {item.origem === 'automatica' && (
                 <Text
                   style={{
-                    color: theme.colors.primary,
-                    fontWeight: 'bold',
-                    fontSize: 16,
+                    color: '#888',
+                    fontSize: 13,
+                    marginTop: 4,
+                    fontStyle: 'italic',
                   }}
                 >
-                  ⚡ {item.consumo_kwh.toFixed(2)} kWh
+                  Registro automático — leitura de dispositivo
                 </Text>
+              )}
+            </View>
 
-                <Text style={{ color: '#666', fontSize: 14 }}>
-                  💰 R$ {item.valor_kwh?.toFixed(2) || '0,00'} /kWh
-                </Text>
-
-                <Text
-                  style={{
-                    color: theme.colors.tertiary || '#b33',
-                    fontWeight: 'bold',
-                    fontSize: 15,
-                  }}
-                >
-                  Total: R$ {(item.custo_estimado ?? 0).toFixed(2)}
-                </Text>
-              </View>
-
-              <IconButton icon='pencil-outline' size={22} />
-            </Card.Content>
-          </Card>
-        </TouchableRipple>
+            {/* 🔹 Mostra o botão de edição só se for manual */}
+            {item.origem !== 'automatica' && (
+              <IconButton
+                icon='pencil-outline'
+                size={22}
+                onPress={() =>
+                  router.push({
+                    pathname: '/editar',
+                    params: {
+                      id: item.id,
+                      data: item.data,
+                      consumo: String(item.consumo_kwh),
+                      valor_kwh: item.valor_kwh ? String(item.valor_kwh) : '',
+                    },
+                  })
+                }
+              />
+            )}
+          </Card.Content>
+        </Card>
       ))}
     </ScrollView>
   );

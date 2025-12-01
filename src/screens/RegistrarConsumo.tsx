@@ -41,6 +41,23 @@ export default function RegistrarConsumoScreen() {
   const [ultimaLeitura, setUltimaLeitura] = useState<number | null>(null);
   const [valorKwh, setValorKwh] = useState('');
   const [modalVisivel, setModalVisivel] = useState(false);
+  const [premiumAtivo, setPremiumAtivo] = useState(false);
+
+  useEffect(() => {
+    async function verificarPremium() {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user?.user) return;
+
+      const { data: assinatura } = await supabase
+        .from('assinaturas')
+        .select('ativa')
+        .eq('user_id', user.user.id)
+        .single();
+
+      setPremiumAtivo(assinatura?.ativa === true);
+    }
+    verificarPremium();
+  }, []);
 
   // ===============================================================
   // 🔹 Carregar dados + garantir limpeza do AsyncStorage
@@ -201,6 +218,22 @@ export default function RegistrarConsumoScreen() {
   // ===============================================================
   // 🔹 Interface
   // ===============================================================
+  if (premiumAtivo) {
+    return (
+      <View style={styles.container}>
+        <Text variant='titleLarge' style={{ marginBottom: 16 }}>
+          📊 Você é Premium!
+        </Text>
+        <Button
+          mode='contained'
+          onPress={() => router.push('/stack/temporeal')}
+        >
+          Ver consumo em tempo real
+        </Button>
+      </View>
+    );
+  }
+
   return (
     <Provider>
       <View style={styles.container}>
